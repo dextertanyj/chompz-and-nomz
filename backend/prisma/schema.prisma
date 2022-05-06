@@ -9,3 +9,99 @@ datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  id       String   @id @default(cuid())
+  name     String
+  email    String   @unique
+  password String
+  visits   Visit[]
+  friends  Friend[] @relation("FriendRequestor")
+  friendOf Friend[] @relation("FriendApprover")
+  Review   Review[]
+  lists    List[]
+}
+
+model Restaurant {
+  id        String     @id @default(cuid())
+  name      String
+  cuisine   Cuisine[]
+  menuItems MenuItem[]
+  Review    Review[]
+  locations Location[]
+  lists     List[]
+}
+
+model Visit {
+  id         String   @id @default(cuid())
+  location   Location @relation(fields: [locationId], references: [id])
+  locationId String
+  users      User[]
+}
+
+model MenuItem {
+  id           String          @id @default(cuid())
+  name         String
+  restaurant   Restaurant      @relation(fields: [restaurantId], references: [id])
+  restaurantId String
+  prices       MenuItemPrice[]
+}
+
+model MenuItemPrice {
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+  menuItemId String
+  date       DateTime
+  price      Int
+
+  @@id(fields: [menuItemId, date])
+}
+
+model Cuisine {
+  id           String      @id @default(cuid())
+  name         String
+  Restaurant   Restaurant? @relation(fields: [restaurantId], references: [id])
+  restaurantId String?
+}
+
+model Friend {
+  requestor   User      @relation("FriendRequestor", fields: [requestorId], references: [id])
+  requestorId String
+  approver    User      @relation("FriendApprover", fields: [approverId], references: [id])
+  approverId  String
+  createdAt   DateTime  @default(now())
+  approvedAt  DateTime?
+
+  @@id(fields: [requestorId, approverId])
+}
+
+model Location {
+  id           String     @id @default(cuid())
+  name         String
+  country      String
+  city         String
+  unit         String
+  street       String
+  postalCode   String
+  active       Boolean    @default(true)
+  Restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  restaurantId String
+  Visits       Visit[]
+
+  @@unique(fields: [restaurantId, country, city, street, postalCode])
+}
+
+model Review {
+  user         User       @relation(fields: [userId], references: [id])
+  userId       String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  restaurantId String
+
+  @@id(fields: [userId, restaurantId])
+}
+
+model List {
+  id          String       @id @default(cuid())
+  name        String
+  users       User[]
+  restaurants Restaurant[]
+}
